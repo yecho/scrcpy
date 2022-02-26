@@ -228,6 +228,15 @@ av_log_callback(void *avcl, int level, const char *fmt, va_list vl) {
     free(local_fmt);
 }
 
+int fileexists(const char *fname) {
+    FILE *file;
+    if ((file = fopen(fname, "r"))) {
+        fclose(file);
+        return 1;
+    }
+    return 0;
+}
+
 static void
 sc_demuxer_on_eos(struct sc_demuxer *demuxer, void *userdata) {
     (void) demuxer;
@@ -549,6 +558,20 @@ aoa_hid_end:
         controller_started = true;
         controller = &s->controller;
 
+        screen.editbezierfile = options->editbeziergrid;
+
+        //MICHITODO:Load file
+        if (options->bezier_file) {
+            if (fileexists(options->bezier_file)) {
+                LOGD("Loading bezier file %s", options->bezier_file);
+            BezierSurface_readFromFile(screen.m_beziersurface, options->bezier_file);
+            BezierSurface_writeTo(screen.m_beziersurface, screen.m_warpinggrid);
+             WarpingGrid_createMesh(screen.m_warpinggrid);
+            }
+        }
+
+
+
         if (options->turn_screen_off) {
             struct sc_control_msg msg;
             msg.type = SC_CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE;
@@ -622,6 +645,16 @@ aoa_hid_end:
 
     ret = event_loop(s);
     LOGD("quit...");
+
+    if (options->bezier_file) {
+        if (options->editbeziergrid) {
+            LOGD("Saving bezier file %s", options->bezier_file);
+           BezierSurface_writeToFile(screen.m_beziersurface, options->bezier_file);
+           LOGD("Saving c++ bezier file %s", "warpingeffect.cpp");
+           BezierSurface_writeToCPPFile(screen.m_beziersurface, "warpingeffect.cpp");
+        }
+    }
+
 
     // Close the window immediately on closing, because screen_destroy() may
     // only be called once the demuxer thread is joined (it may take time)

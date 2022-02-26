@@ -7,6 +7,8 @@
 #include "screen.h"
 #include "util/log.h"
 
+#include "posteffectlib.h"
+
 #define SC_SDL_SHORTCUT_MODS_MASK (KMOD_CTRL | KMOD_ALT | KMOD_GUI)
 
 static inline uint16_t
@@ -64,6 +66,8 @@ sc_input_manager_init(struct sc_input_manager *im,
     im->forward_all_clicks = params->forward_all_clicks;
     im->legacy_paste = params->legacy_paste;
     im->clipboard_autosync = params->clipboard_autosync;
+
+    im->editbeziergrid = params->editbeziergrid;
 
     const struct sc_shortcut_mods *shortcut_mods = params->shortcut_mods;
     assert(shortcut_mods->count);
@@ -370,135 +374,272 @@ sc_input_manager_process_key(struct sc_input_manager *im,
     bool smod = is_shortcut_mod(im, mod);
 
     if (down && !repeat) {
-        if (keycode == im->last_keycode && mod == im->last_mod) {
-            ++im->key_repeat;
-        } else {
-            im->key_repeat = 0;
-            im->last_keycode = keycode;
-            im->last_mod = mod;
-        }
+      if (keycode == im->last_keycode && mod == im->last_mod) {
+        ++im->key_repeat;
+      } else {
+        im->key_repeat = 0;
+        im->last_keycode = keycode;
+        im->last_mod = mod;
+      }
     }
+
+    if (im->editbeziergrid) {
+      switch (keycode) {
+        case SDLK_DOWN:
+          if (down) {
+            im->screen->m_selected_pointy = MAX(0,im->screen->m_selected_pointy-1);
+          }
+          break;
+        case SDLK_UP:
+          if (down) {
+            im->screen->m_selected_pointy = MIN(POINTS_OF_BEZIER-1,im->screen->m_selected_pointy+1);
+          }
+          break;
+        case SDLK_LEFT:
+          if (down) {
+            im->screen->m_selected_pointx = MAX(0,im->screen->m_selected_pointx-1);
+          }
+          break;
+        case SDLK_RIGHT:
+          if (down) {
+            im->screen->m_selected_pointx = MIN(POINTS_OF_BEZIER-1,im->screen->m_selected_pointx+1);
+          }
+          break;
+
+        case SDLK_w:
+          if (down) {
+            im->screen->m_beziersurface->m_controlpoints[im->screen->m_selected_pointx][im->screen->m_selected_pointy].y += 0.01;
+          }
+          break;
+        case SDLK_s:
+          if (down) {
+            im->screen->m_beziersurface->m_controlpoints[im->screen->m_selected_pointx][im->screen->m_selected_pointy].y -= 0.01;
+          }
+          break;
+
+        case SDLK_a:
+          if (down) {
+            im->screen->m_beziersurface->m_controlpoints[im->screen->m_selected_pointx][im->screen->m_selected_pointy].x -= 0.01;
+          }
+          break;
+        case SDLK_d:
+          if (down) {
+            im->screen->m_beziersurface->m_controlpoints[im->screen->m_selected_pointx][im->screen->m_selected_pointy].x += 0.01;
+          }
+          break;
+
+        case SDLK_t:
+          if (down) {
+            for (int i=0; i <POINTS_OF_BEZIER; i++) {
+              for (int j=0; j <POINTS_OF_BEZIER; j++) {
+                im->screen->m_beziersurface->m_controlpoints[i][j].y += 0.01;
+              }
+            }
+          }
+          break;
+        case SDLK_g:
+          if (down) {
+            for (int i=0; i <POINTS_OF_BEZIER; i++) {
+              for (int j=0; j <POINTS_OF_BEZIER; j++) {
+                im->screen->m_beziersurface->m_controlpoints[i][j].y -= 0.01;
+              }
+            }
+          }
+          break;
+
+        case SDLK_f:
+          if (down) {
+            for (int i=0; i <POINTS_OF_BEZIER; i++) {
+              for (int j=0; j <POINTS_OF_BEZIER; j++) {
+                im->screen->m_beziersurface->m_controlpoints[i][j].x -= 0.01;
+              }
+            }
+          }
+          break;
+        case SDLK_h:
+          if (down) {
+            for (int i=0; i <POINTS_OF_BEZIER; i++) {
+              for (int j=0; j <POINTS_OF_BEZIER; j++) {
+                im->screen->m_beziersurface->m_controlpoints[i][j].x += 0.01;
+              }
+            }
+          }
+          break;
+        case SDLK_u:
+          if (down) {
+            float centerx=0.0f, centery=0.0f;
+
+            for (int i=0; i <POINTS_OF_BEZIER; i++) {
+              for (int j=0; j <POINTS_OF_BEZIER; j++) {
+                centerx +=  im->screen->m_beziersurface->m_controlpoints[i][j].x;
+                centery +=  im->screen->m_beziersurface->m_controlpoints[i][j].y;
+              }
+            }
+            centerx /= (float)(POINTS_OF_BEZIER*POINTS_OF_BEZIER);
+            centery /= (float)(POINTS_OF_BEZIER*POINTS_OF_BEZIER);
+
+            for (int i=0; i <POINTS_OF_BEZIER; i++) {
+              for (int j=0; j <POINTS_OF_BEZIER; j++) {
+                im->screen->m_beziersurface->m_controlpoints[i][j].x = (im->screen->m_beziersurface->m_controlpoints[i][j].x-centerx)*0.98+centerx;
+                im->screen->m_beziersurface->m_controlpoints[i][j].y = (im->screen->m_beziersurface->m_controlpoints[i][j].y-centery)*0.98+centery;
+              }
+            }
+          }
+          break;
+        case SDLK_j:
+          if (down) {
+            float centerx=0.0f, centery=0.0f;
+
+            for (int i=0; i <POINTS_OF_BEZIER; i++) {
+              for (int j=0; j <POINTS_OF_BEZIER; j++) {
+                centerx +=  im->screen->m_beziersurface->m_controlpoints[i][j].x;
+                centery +=  im->screen->m_beziersurface->m_controlpoints[i][j].y;
+              }
+            }
+            centerx /= (float)(POINTS_OF_BEZIER*POINTS_OF_BEZIER);
+            centery /= (float)(POINTS_OF_BEZIER*POINTS_OF_BEZIER);
+
+            for (int i=0; i <POINTS_OF_BEZIER; i++) {
+              for (int j=0; j <POINTS_OF_BEZIER; j++) {
+                im->screen->m_beziersurface->m_controlpoints[i][j].x = (im->screen->m_beziersurface->m_controlpoints[i][j].x-centerx)/0.98+centerx;
+                im->screen->m_beziersurface->m_controlpoints[i][j].y = (im->screen->m_beziersurface->m_controlpoints[i][j].y-centery)/0.98+centery;
+              }
+            }
+          }
+          break;
+      }
+      if (down) {
+        BezierSurface_writeTo(im->screen->m_beziersurface, im->screen->m_warpinggrid);
+        WarpingGrid_createMesh(im->screen->m_warpinggrid);
+        screen_render(im->screen, true);
+      }
+      return;
+
+    }
+
+
+
 
     // The shortcut modifier is pressed
     if (smod) {
-        enum sc_action action = down ? SC_ACTION_DOWN : SC_ACTION_UP;
-        switch (keycode) {
-            case SDLK_h:
-                if (controller && !shift && !repeat) {
-                    action_home(controller, action);
-                }
-                return;
-            case SDLK_b: // fall-through
-            case SDLK_BACKSPACE:
-                if (controller && !shift && !repeat) {
-                    action_back(controller, action);
-                }
-                return;
-            case SDLK_s:
-                if (controller && !shift && !repeat) {
-                    action_app_switch(controller, action);
-                }
-                return;
-            case SDLK_m:
-                if (controller && !shift && !repeat) {
-                    action_menu(controller, action);
-                }
-                return;
-            case SDLK_p:
-                if (controller && !shift && !repeat) {
-                    action_power(controller, action);
-                }
-                return;
-            case SDLK_o:
-                if (controller && !repeat && down) {
-                    enum sc_screen_power_mode mode = shift
-                                                   ? SC_SCREEN_POWER_MODE_NORMAL
-                                                   : SC_SCREEN_POWER_MODE_OFF;
-                    set_screen_power_mode(controller, mode);
-                }
-                return;
-            case SDLK_DOWN:
-                if (controller && !shift) {
-                    // forward repeated events
-                    action_volume_down(controller, action);
-                }
-                return;
-            case SDLK_UP:
-                if (controller && !shift) {
-                    // forward repeated events
-                    action_volume_up(controller, action);
-                }
-                return;
-            case SDLK_LEFT:
-                if (!shift && !repeat && down) {
-                    rotate_client_left(im->screen);
-                }
-                return;
-            case SDLK_RIGHT:
-                if (!shift && !repeat && down) {
-                    rotate_client_right(im->screen);
-                }
-                return;
-            case SDLK_c:
-                if (controller && !shift && !repeat && down) {
-                    get_device_clipboard(controller, SC_COPY_KEY_COPY);
-                }
-                return;
-            case SDLK_x:
-                if (controller && !shift && !repeat && down) {
-                    get_device_clipboard(controller, SC_COPY_KEY_CUT);
-                }
-                return;
-            case SDLK_v:
-                if (controller && !repeat && down) {
-                    if (shift || im->legacy_paste) {
-                        // inject the text as input events
-                        clipboard_paste(controller);
-                    } else {
-                        // store the text in the device clipboard and paste,
-                        // without requesting an acknowledgment
-                        set_device_clipboard(controller, true,
-                                             SC_SEQUENCE_INVALID);
-                    }
-                }
-                return;
-            case SDLK_f:
-                if (!shift && !repeat && down) {
-                    sc_screen_switch_fullscreen(im->screen);
-                }
-                return;
-            case SDLK_w:
-                if (!shift && !repeat && down) {
-                    sc_screen_resize_to_fit(im->screen);
-                }
-                return;
-            case SDLK_g:
-                if (!shift && !repeat && down) {
-                    sc_screen_resize_to_pixel_perfect(im->screen);
-                }
-                return;
-            case SDLK_i:
-                if (!shift && !repeat && down) {
-                    switch_fps_counter_state(&im->screen->fps_counter);
-                }
-                return;
-            case SDLK_n:
-                if (controller && !repeat && down) {
-                    if (shift) {
-                        collapse_panels(controller);
-                    } else if (im->key_repeat == 0) {
-                        expand_notification_panel(controller);
-                    } else {
-                        expand_settings_panel(controller);
-                    }
-                }
-                return;
-            case SDLK_r:
-                if (controller && !shift && !repeat && down) {
-                    rotate_device(controller);
-                }
-                return;
-        }
+      enum sc_action action = down ? SC_ACTION_DOWN : SC_ACTION_UP;
+      switch (keycode) {
+        case SDLK_h:
+          if (controller && !shift && !repeat) {
+            action_home(controller, action);
+          }
+          return;
+        case SDLK_b: // fall-through
+        case SDLK_BACKSPACE:
+          if (controller && !shift && !repeat) {
+            action_back(controller, action);
+          }
+          return;
+        case SDLK_s:
+          if (controller && !shift && !repeat) {
+            action_app_switch(controller, action);
+          }
+          return;
+        case SDLK_m:
+          if (controller && !shift && !repeat) {
+            action_menu(controller, action);
+          }
+          return;
+        case SDLK_p:
+          if (controller && !shift && !repeat) {
+            action_power(controller, action);
+          }
+          return;
+        case SDLK_o:
+          if (controller && !repeat && down) {
+            enum sc_screen_power_mode mode = shift
+              ? SC_SCREEN_POWER_MODE_NORMAL
+              : SC_SCREEN_POWER_MODE_OFF;
+            set_screen_power_mode(controller, mode);
+          }
+          return;
+        case SDLK_DOWN:
+          if (controller && !shift) {
+            // forward repeated events
+            action_volume_down(controller, action);
+          }
+          return;
+        case SDLK_UP:
+          if (controller && !shift) {
+            // forward repeated events
+            action_volume_up(controller, action);
+          }
+          return;
+        case SDLK_LEFT:
+          if (!shift && !repeat && down) {
+            rotate_client_left(im->screen);
+          }
+          return;
+        case SDLK_RIGHT:
+          if (!shift && !repeat && down) {
+            rotate_client_right(im->screen);
+          }
+          return;
+        case SDLK_c:
+          if (controller && !shift && !repeat && down) {
+            get_device_clipboard(controller, SC_COPY_KEY_COPY);
+          }
+          return;
+        case SDLK_x:
+          if (controller && !shift && !repeat && down) {
+            get_device_clipboard(controller, SC_COPY_KEY_CUT);
+          }
+          return;
+        case SDLK_v:
+          if (controller && !repeat && down) {
+            if (shift || im->legacy_paste) {
+              // inject the text as input events
+              clipboard_paste(controller);
+            } else {
+              // store the text in the device clipboard and paste,
+              // without requesting an acknowledgment
+              set_device_clipboard(controller, true,
+                  SC_SEQUENCE_INVALID);
+            }
+          }
+          return;
+        case SDLK_f:
+          if (!shift && !repeat && down) {
+            sc_screen_switch_fullscreen(im->screen);
+          }
+          return;
+        case SDLK_w:
+          if (!shift && !repeat && down) {
+            sc_screen_resize_to_fit(im->screen);
+          }
+          return;
+        case SDLK_g:
+          if (!shift && !repeat && down) {
+            sc_screen_resize_to_pixel_perfect(im->screen);
+          }
+          return;
+        case SDLK_i:
+          if (!shift && !repeat && down) {
+            switch_fps_counter_state(&im->screen->fps_counter);
+          }
+          return;
+        case SDLK_n:
+          if (controller && !repeat && down) {
+            if (shift) {
+              collapse_panels(controller);
+            } else if (im->key_repeat == 0) {
+              expand_notification_panel(controller);
+            } else {
+              expand_settings_panel(controller);
+            }
+          }
+          return;
+        case SDLK_r:
+          if (controller && !shift && !repeat && down) {
+            rotate_device(controller);
+          }
+          return;
+      }
 
         return;
     }

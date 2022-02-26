@@ -56,6 +56,8 @@
 #define OPT_OTG                    1036
 #define OPT_NO_CLEANUP             1037
 #define OPT_PRINT_FPS              1038
+#define OPT_ENABLE_BEZIER_EDIT     1100
+#define OPT_BEZIER_FILE            1101
 
 struct sc_option {
     char shortopt;
@@ -535,6 +537,17 @@ static const struct sc_option options[] = {
         .argdesc = "value",
         .text = "Set the initial window height.\n"
                 "Default is 0 (automatic).",
+    },
+    {
+        .longopt_id = OPT_ENABLE_BEZIER_EDIT,
+        .longopt = "enable-bezier-edit",
+        .text = "Activates Bezier Editing.",
+    },
+    {
+        .longopt_id = OPT_ENABLE_BEZIER_EDIT,
+        .longopt = "bezierfile",
+        .argdesc = "filename",
+        .text = "Determines warping effect file.",
     },
 };
 
@@ -1579,6 +1592,13 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 LOGE("V4L2 (--v4l2-buffer) is only available on Linux.");
                 return false;
 #endif
+            case OPT_BEZIER_FILE:
+                opts->bezier_file = optarg;
+                break;
+            break;
+            case OPT_ENABLE_BEZIER_EDIT
+                opts->editbeziergrid = true;
+                break;
             default:
                 // getopt prints the error message on stderr
                 return false;

@@ -10,6 +10,8 @@
 #include "video_buffer.h"
 #include "util/log.h"
 
+#include "posteffectlib.c"
+
 #define DISPLAY_MARGINS 96
 
 #define DOWNCAST(SINK) container_of(SINK, struct sc_screen, frame_sink)
@@ -277,9 +279,20 @@ sc_screen_render(struct sc_screen *screen, bool update_content_rect) {
         sc_screen_update_content_rect(screen);
     }
 
+    bool haspostshader = false;
+    if (screen->use_opengl) {
+        SDL_RenderClear(screen->renderer); 
+        PostShader_beginSlow(screen->m_postshader);
+        haspostshader = true;
+    }
+
     SDL_RenderClear(screen->renderer);
     if (screen->rotation == 0) {
-        SDL_RenderCopy(screen->renderer, screen->texture, NULL, &screen->rect);
+        if (haspostshader) {
+            SDL_RenderCopy(screen->renderer, screen->texture, NULL, NULL);
+        } else {
+            SDL_RenderCopy(screen->renderer, screen->texture, NULL, &screen->rect);
+        }
     } else {
         // rotation in RenderCopyEx() is clockwise, while screen->rotation is
         // counterclockwise (to be consistent with --lock-video-orientation)
@@ -299,9 +312,24 @@ sc_screen_render(struct sc_screen *screen, bool update_content_rect) {
             dstrect = &screen->rect;
         }
 
-        SDL_RenderCopyEx(screen->renderer, screen->texture, NULL, dstrect,
-                         angle, NULL, 0);
+        if (haspostshader) {
+            SDL_RenderCopyEx(screen->renderer, screen->texture, NULL, NULL,
+                                        angle, NULL, 0);
+        } else {
+            SDL_RenderCopyEx(screen->renderer, screen->texture, NULL, dstrect,
+                                        angle, NULL, 0);
+        }
     }
+
+    if (screen->use_opengl) {
+        // PostShader_endSlow(screen->m_postshader);
+        if (screen->editbezierfile) {
+            PostShader_end(screen->m_postshader, screen->m_warpinggrid, screen->m_beziersurface, screen->m_selected_pointx, screen->m_selected_pointy);
+        } else {
+            PostShader_end(screen->m_postshader, screen->m_warpinggrid, NULL, screen->m_selected_pointx, screen->m_selected_pointy);
+        }
+    }
+
     SDL_RenderPresent(screen->renderer);
 }
 
@@ -404,6 +432,15 @@ sc_screen_init(struct sc_screen *screen,
     screen->event_failed = false;
     screen->mouse_capture_key_pressed = 0;
 
+    screen->m_postshader = NULL;
+    screen->m_selected_pointx=0;
+    screen->m_selected_pointy=0;
+    screen->editbezierfile=false;
+    screen->m_warpinggrid=NULL;
+    screen->m_beziersurface = NULL;
+    screen->m_window_height = 0;
+    screen->m_window_width = 0;
+
     screen->req.x = params->window_x;
     screen->req.y = params->window_y;
     screen->req.width = params->window_width;
@@ -493,6 +530,45 @@ sc_screen_init(struct sc_screen *screen,
         } else {
             LOGI("Trilinear filtering disabled");
         }
+
+        const char* sp2 = "\n"
+                "           varying  vec2 outtexcoord0;\n"
+                "uniform sampler2D sampler;\n"
+                "void main()\n"
+                "         {\n"
+                "              vec2 texcoord = outtexcoord0.xy;\n"
+                "             // texcoord.x = texcoord.x+sin(texcoord.y/25.0)*10;\n"
+                "              gl_FragColor = vec4(texture2D(sampler, texcoord).xyz, 1.0);//+ vec4(1.0, texcoord.x, texcoord.y, 1.0);\n"
+                " \n"
+                "           }\n"
+                " ";
+
+        const char* sv = "\n"
+                "          attribute vec4 InVertex;\n"
+                "           attribute vec2 InTexCoord0;\n"
+                "           uniform  mat4 transformmatrix;\n"
+                "          varying  vec2 outtexcoord0;\n"
+                "void main()\n"
+                "{\n"
+                "   gl_Position = transformmatrix * gl_Vertex;\n"
+                "    outtexcoord0 = InTexCoord0;\n"
+                "}\n"
+                "\n"
+                "";
+
+        // screen->m_postshader = malloc(sizeof(struct PostShader));
+        screen->m_postshader = PostShader_Create(sv, sp2);
+        screen->m_warpinggrid = WarpingGrid_Create(20,20);
+        screen->m_beziersurface = BezierSurface_Create();
+        BezierSurface_initBezierSurface(screen->m_beziersurface, vec2_set(0.0,0.0), vec2_set(1.0,1.0));
+        //screen->m_beziersurface->m_controlpoints[0][0] = vec2_set(0.1,0.1);
+        //screen->m_beziersurface->m_controlpoints[0][1] = vec2_set(0.2,0.2);
+        screen->m_window_width = window_width;
+        screen->m_window_height = window_height;
+        screen->m_selected_pointx=0;
+        screen->m_selected_pointy=0;
+        BezierSurface_writeTo(screen->m_beziersurface, screen->m_warpinggrid);
+        WarpingGrid_createMesh(screen->m_warpinggrid);
     } else if (params->mipmaps) {
         LOGD("Trilinear filtering disabled (not an OpenGL renderer)");
     }
@@ -621,6 +697,15 @@ sc_screen_destroy(struct sc_screen *screen) {
     SDL_DestroyWindow(screen->window);
     sc_fps_counter_destroy(&screen->fps_counter);
     sc_video_buffer_destroy(&screen->vb);
+    if (screen->m_warpinggrid) {
+        WarpingGrid_Destroy(screen->m_warpinggrid);
+    }
+    if (screen->m_beziersurface) {
+        BezierSurface_Destroy(screen->m_beziersurface);
+    }
+    if (screen->m_postshader) {
+        PostShader_Destroy(screen->m_postshader);
+    }
 }
 
 static void

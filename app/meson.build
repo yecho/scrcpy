@@ -98,6 +98,7 @@ if not crossbuild_windows
         dependency('libavcodec', version: '>= 57.37'),
         dependency('libavutil'),
         dependency('sdl2', version: '>= 2.0.5'),
+        dependency('glew'),
     ]
 
     if v4l2_support

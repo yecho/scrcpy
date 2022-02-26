@@ -128,6 +128,8 @@ struct scrcpy_options {
     bool force_adb_forward;
     bool disable_screensaver;
     bool forward_key_repeat;
+    bool editbeziergrid;
+    const char *bezier_file;
     bool forward_all_clicks;
     bool legacy_paste;
     bool power_off_on_close;

@@ -7,6 +7,8 @@
 #include <SDL2/SDL.h>
 #include <libavformat/avformat.h>
 
+#include "posteffectlib.h"
+
 #include "controller.h"
 #include "coords.h"
 #include "fps_counter.h"
@@ -58,6 +60,15 @@ struct sc_screen {
     bool fullscreen;
     bool maximized;
     bool mipmaps;
+
+    int m_window_height;
+    int m_window_width;
+    int m_selected_pointx;
+    int m_selected_pointy;
+    struct PostShader* m_postshader;
+    struct WarpingGrid* m_warpinggrid;
+    struct BezierSurface* m_beziersurface;
+    bool editbezierfile;
 
     bool event_failed; // in case SDL_PushEvent() returned an error
 
