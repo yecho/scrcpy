@@ -273,7 +273,7 @@ create_texture(struct sc_screen *screen) {
 //
 // Set the update_content_rect flag if the window or content size may have
 // changed, so that the content rectangle is recomputed
-static void
+void
 sc_screen_render(struct sc_screen *screen, bool update_content_rect) {
     if (update_content_rect) {
         sc_screen_update_content_rect(screen);
@@ -432,6 +432,7 @@ sc_screen_init(struct sc_screen *screen,
     screen->event_failed = false;
     screen->mouse_capture_key_pressed = 0;
 
+    screen->use_opengl = false;
     screen->m_postshader = NULL;
     screen->m_selected_pointx=0;
     screen->m_selected_pointy=0;
@@ -509,8 +510,8 @@ sc_screen_init(struct sc_screen *screen,
     screen->mipmaps = false;
 
     // starts with "opengl"
-    bool use_opengl = renderer_name && !strncmp(renderer_name, "opengl", 6);
-    if (use_opengl) {
+    screen->use_opengl = renderer_name && !strncmp(renderer_name, "opengl", 6);
+    if (screen->use_opengl) {
         struct sc_opengl *gl = &screen->gl;
         sc_opengl_init(gl);
 
@@ -563,8 +564,8 @@ sc_screen_init(struct sc_screen *screen,
         BezierSurface_initBezierSurface(screen->m_beziersurface, vec2_set(0.0,0.0), vec2_set(1.0,1.0));
         //screen->m_beziersurface->m_controlpoints[0][0] = vec2_set(0.1,0.1);
         //screen->m_beziersurface->m_controlpoints[0][1] = vec2_set(0.2,0.2);
-        screen->m_window_width = window_width;
-        screen->m_window_height = window_height;
+        screen->m_window_width = params->window_width;
+        screen->m_window_height = params->window_height;
         screen->m_selected_pointx=0;
         screen->m_selected_pointy=0;
         BezierSurface_writeTo(screen->m_beziersurface, screen->m_warpinggrid);
@@ -605,6 +606,7 @@ sc_screen_init(struct sc_screen *screen,
         .legacy_paste = params->legacy_paste,
         .clipboard_autosync = params->clipboard_autosync,
         .shortcut_mods = params->shortcut_mods,
+        .editbeziergrid = params->editbezierfile,
     };
 
     sc_input_manager_init(&screen->im, &im_params);

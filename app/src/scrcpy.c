@@ -422,6 +422,47 @@ scrcpy(struct scrcpy_options *options) {
     struct sc_key_processor *kp = NULL;
     struct sc_mouse_processor *mp = NULL;
 
+    // There is a controller if and only if control is enabled
+    assert(options->control == !!controller);
+
+    if (options->display) {
+        const char *window_title =
+            options->window_title ? options->window_title : info->device_name;
+
+        struct sc_screen_params screen_params = {
+            .controller = controller,
+            .fp = fp,
+            .kp = kp,
+            .mp = mp,
+            .forward_all_clicks = options->forward_all_clicks,
+            .legacy_paste = options->legacy_paste,
+            .clipboard_autosync = options->clipboard_autosync,
+            .shortcut_mods = &options->shortcut_mods,
+            .window_title = window_title,
+            .frame_size = info->frame_size,
+            .always_on_top = options->always_on_top,
+            .window_x = options->window_x,
+            .window_y = options->window_y,
+            .window_width = options->window_width,
+            .window_height = options->window_height,
+            .window_borderless = options->window_borderless,
+            .rotation = options->rotation,
+            .mipmaps = options->mipmaps,
+            .fullscreen = options->fullscreen,
+            .start_fps_counter = options->start_fps_counter,
+            .buffering_time = options->display_buffer,
+            .editbezierfile = options->editbeziergrid,
+        };
+
+        if (!sc_screen_init(&s->screen, &screen_params)) {
+            goto end;
+        }
+        screen_initialized = true;
+
+        sc_decoder_add_sink(&s->decoder, &s->screen.frame_sink);
+    }
+
+
     if (options->control) {
 #ifdef HAVE_USB
         bool use_hid_keyboard =
@@ -558,19 +599,19 @@ aoa_hid_end:
         controller_started = true;
         controller = &s->controller;
 
-        screen.editbezierfile = options->editbeziergrid;
+        s->screen.editbezierfile = options->editbeziergrid;
 
         //MICHITODO:Load file
         if (options->bezier_file) {
             if (fileexists(options->bezier_file)) {
-                LOGD("Loading bezier file %s", options->bezier_file);
-            BezierSurface_readFromFile(screen.m_beziersurface, options->bezier_file);
-            BezierSurface_writeTo(screen.m_beziersurface, screen.m_warpinggrid);
-             WarpingGrid_createMesh(screen.m_warpinggrid);
+                LOGI("Loading bezier file %s", options->bezier_file);
+                BezierSurface_readFromFile(&s->screen.m_beziersurface, options->bezier_file);
+                BezierSurface_writeTo(&s->screen.m_beziersurface, &s->screen.m_warpinggrid);
+                WarpingGrid_createMesh(&s->screen.m_warpinggrid); // XXX: HERE
+            } else {
+                LOGI("will make new bezier file %s", options->bezier_file);
             }
         }
-
-
 
         if (options->turn_screen_off) {
             struct sc_control_msg msg;
@@ -582,45 +623,6 @@ aoa_hid_end:
             }
         }
 
-    }
-
-    // There is a controller if and only if control is enabled
-    assert(options->control == !!controller);
-
-    if (options->display) {
-        const char *window_title =
-            options->window_title ? options->window_title : info->device_name;
-
-        struct sc_screen_params screen_params = {
-            .controller = controller,
-            .fp = fp,
-            .kp = kp,
-            .mp = mp,
-            .forward_all_clicks = options->forward_all_clicks,
-            .legacy_paste = options->legacy_paste,
-            .clipboard_autosync = options->clipboard_autosync,
-            .shortcut_mods = &options->shortcut_mods,
-            .window_title = window_title,
-            .frame_size = info->frame_size,
-            .always_on_top = options->always_on_top,
-            .window_x = options->window_x,
-            .window_y = options->window_y,
-            .window_width = options->window_width,
-            .window_height = options->window_height,
-            .window_borderless = options->window_borderless,
-            .rotation = options->rotation,
-            .mipmaps = options->mipmaps,
-            .fullscreen = options->fullscreen,
-            .start_fps_counter = options->start_fps_counter,
-            .buffering_time = options->display_buffer,
-        };
-
-        if (!sc_screen_init(&s->screen, &screen_params)) {
-            goto end;
-        }
-        screen_initialized = true;
-
-        sc_decoder_add_sink(&s->decoder, &s->screen.frame_sink);
     }
 
 #ifdef HAVE_V4L2
@@ -649,9 +651,9 @@ aoa_hid_end:
     if (options->bezier_file) {
         if (options->editbeziergrid) {
             LOGD("Saving bezier file %s", options->bezier_file);
-           BezierSurface_writeToFile(screen.m_beziersurface, options->bezier_file);
-           LOGD("Saving c++ bezier file %s", "warpingeffect.cpp");
-           BezierSurface_writeToCPPFile(screen.m_beziersurface, "warpingeffect.cpp");
+            BezierSurface_writeToFile(s->screen.m_beziersurface, options->bezier_file);
+            LOGD("Saving c++ bezier file %s", "warpingeffect.cpp");
+            BezierSurface_writeToCPPFile(s->screen.m_beziersurface, "warpingeffect.cpp");
         }
     }
 

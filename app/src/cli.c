@@ -544,7 +544,7 @@ static const struct sc_option options[] = {
         .text = "Activates Bezier Editing.",
     },
     {
-        .longopt_id = OPT_ENABLE_BEZIER_EDIT,
+        .longopt_id = OPT_BEZIER_FILE,
         .longopt = "bezierfile",
         .argdesc = "filename",
         .text = "Determines warping effect file.",
@@ -1565,6 +1565,12 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_PRINT_FPS:
                 opts->start_fps_counter = true;
                 break;
+            case OPT_BEZIER_FILE:
+                opts->bezier_file = optarg;
+                break;
+	          case OPT_ENABLE_BEZIER_EDIT:
+                opts->editbeziergrid = true;
+                break;
             case OPT_OTG:
 #ifdef HAVE_USB
                 opts->otg = true;
@@ -1592,13 +1598,6 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 LOGE("V4L2 (--v4l2-buffer) is only available on Linux.");
                 return false;
 #endif
-            case OPT_BEZIER_FILE:
-                opts->bezier_file = optarg;
-                break;
-            break;
-            case OPT_ENABLE_BEZIER_EDIT
-                opts->editbeziergrid = true;
-                break;
             default:
                 // getopt prints the error message on stderr
                 return false;

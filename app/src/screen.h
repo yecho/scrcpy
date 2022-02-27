@@ -43,6 +43,7 @@ struct sc_screen {
     SDL_Window *window;
     SDL_Renderer *renderer;
     SDL_Texture *texture;
+    bool use_opengl;
     struct sc_opengl gl;
     struct sc_size frame_size;
     struct sc_size content_size; // rotated frame_size
@@ -107,6 +108,8 @@ struct sc_screen_params {
     bool fullscreen;
     bool start_fps_counter;
 
+    bool editbezierfile;
+
     sc_tick buffering_time;
 };
 
@@ -126,6 +129,13 @@ sc_screen_join(struct sc_screen *screen);
 // destroy window, renderer and texture (if any)
 void
 sc_screen_destroy(struct sc_screen *screen);
+
+// render the texture to the renderer
+//
+// Set the update_content_rect flag if the window or content size may have
+// changed, so that the content rectangle is reomputed
+void
+sc_screen_render(struct sc_screen *screen, bool update_content_rect);
 
 // hide the window
 //

@@ -29,24 +29,24 @@
 #define CHECKERROR(a)
 #endif
 
-struct WarpingGridVertex
-{
+struct WarpingGridVertex {
    float m_posx;
    float m_posy;
    float m_posz;
    float m_u;
    float m_v;
 };
+
 //struct WarpingGridVertex WarpingGridVertex_Create(struct vec2 p, float u, float v);
-struct WarpingGrid
-{
+struct WarpingGrid {
     int m_sizex;
     int m_sizey;
     struct vec2* m_grid;
     struct WarpingGridVertex* m_vertices;
     int m_vertices_count;
-   
+
 };
+
 struct WarpingGrid* WarpingGrid_Create(int x, int y);
 void WarpingGrid_set(struct WarpingGrid*self, int i, int j, struct vec2 pos);
 struct vec2 WarpingGrid_get(struct WarpingGrid*self, int i, int j);
@@ -58,19 +58,17 @@ double factorial(int n);
 double binom(int n, int k);
 double bernstein(int n, int i, double u);
 
-struct vec2
-{
+struct vec2 {
    float x;
    float y;
 };
 
 struct vec2 vec2_set(float x, float y);
 
-struct BezierSurface
-{
-    
+struct BezierSurface {
+
     struct vec2 m_controlpoints[POINTS_OF_BEZIER][POINTS_OF_BEZIER];
-    
+
 };
 
 struct vec2 BezierSurface_eval(struct BezierSurface* self, double u, double v);
@@ -85,8 +83,7 @@ void BezierSurface_writeToCPPFile(struct BezierSurface* self, const char* filena
 
 bool ShowError(const char *c);
 
-struct PostShader
-{
+struct PostShader {
     GLuint m_colorframebuffer;
     GLuint m_depthframebuffer;
     GLuint m_colortexture;
@@ -104,7 +101,7 @@ struct PostShader
     GLint m_transformmatrixdefault;
     struct PostShader* m_prevshader;
     bool m_active;
-    
+
     //void PostShader_end(PostShader* self, struct vec2 v1, const android::vec2& v2, const android::vec2& v3, const android::vec2& v4);
 
 };
@@ -116,8 +113,7 @@ void PostShader_end(struct PostShader* self, struct WarpingGrid* grid, struct Be
 void PostShader_beginSlow(struct PostShader* self);
 void PostShader_endSlow(struct PostShader* self);
 /*
-class BlurShader
-{
+class BlurShader {
 protected:
     PostShader* m_firstshader;
     PostShader* m_secondshader;

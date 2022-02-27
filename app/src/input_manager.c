@@ -373,6 +373,141 @@ sc_input_manager_process_key(struct sc_input_manager *im,
 
     bool smod = is_shortcut_mod(im, mod);
 
+    // NOTE: if we edit the bezier grid, we will consume the input and not let anything pass
+    if (im->editbeziergrid) {
+        switch (keycode) {
+            case SDLK_DOWN:
+                if (down) {
+                    im->screen->m_selected_pointy = MAX(0,im->screen->m_selected_pointy-1);
+                }
+                break;
+            case SDLK_UP:
+                if (down) {
+                    im->screen->m_selected_pointy = MIN(POINTS_OF_BEZIER-1,im->screen->m_selected_pointy+1);
+                }
+                break;
+            case SDLK_LEFT:
+                if (down) {
+                    im->screen->m_selected_pointx = MAX(0,im->screen->m_selected_pointx-1);
+                }
+                break;
+            case SDLK_RIGHT:
+                if (down) {
+                    im->screen->m_selected_pointx = MIN(POINTS_OF_BEZIER-1,im->screen->m_selected_pointx+1);
+                }
+                break;
+
+            case SDLK_w:
+                if (down) {
+                    im->screen->m_beziersurface->m_controlpoints[im->screen->m_selected_pointx][im->screen->m_selected_pointy].y += 0.01;
+                }
+                break;
+            case SDLK_s:
+                if (down) {
+                    im->screen->m_beziersurface->m_controlpoints[im->screen->m_selected_pointx][im->screen->m_selected_pointy].y -= 0.01;
+                }
+                break;
+
+            case SDLK_a:
+                if (down) {
+                    im->screen->m_beziersurface->m_controlpoints[im->screen->m_selected_pointx][im->screen->m_selected_pointy].x -= 0.01;
+                }
+                break;
+            case SDLK_d:
+                if (down) {
+                    im->screen->m_beziersurface->m_controlpoints[im->screen->m_selected_pointx][im->screen->m_selected_pointy].x += 0.01;
+                }
+                break;
+
+            case SDLK_t:
+                if (down) {
+                    for (int i=0; i <POINTS_OF_BEZIER; i++) {
+                        for (int j=0; j <POINTS_OF_BEZIER; j++) {
+                            im->screen->m_beziersurface->m_controlpoints[i][j].y += 0.01;
+                        }
+                    }
+                }
+                break;
+            case SDLK_g:
+                if (down) {
+                    for (int i=0; i <POINTS_OF_BEZIER; i++) {
+                        for (int j=0; j <POINTS_OF_BEZIER; j++) {
+                            im->screen->m_beziersurface->m_controlpoints[i][j].y -= 0.01;
+                        }
+                    }
+                }
+                break;
+
+            case SDLK_f:
+                if (down) {
+                    for (int i=0; i <POINTS_OF_BEZIER; i++) {
+                        for (int j=0; j <POINTS_OF_BEZIER; j++) {
+                            im->screen->m_beziersurface->m_controlpoints[i][j].x -= 0.01;
+                        }
+                    }
+                }
+                break;
+            case SDLK_h:
+                if (down) {
+                    for (int i=0; i <POINTS_OF_BEZIER; i++) {
+                        for (int j=0; j <POINTS_OF_BEZIER; j++) {
+                            im->screen->m_beziersurface->m_controlpoints[i][j].x += 0.01;
+                        }
+                    }
+                }
+                break;
+            case SDLK_u:
+                if (down) {
+                    float centerx=0.0f, centery=0.0f;
+
+                    for (int i=0; i <POINTS_OF_BEZIER; i++) {
+                        for (int j=0; j <POINTS_OF_BEZIER; j++) {
+                            centerx +=  im->screen->m_beziersurface->m_controlpoints[i][j].x;
+                            centery +=  im->screen->m_beziersurface->m_controlpoints[i][j].y;
+                        }
+                    }
+                    centerx /= (float)(POINTS_OF_BEZIER*POINTS_OF_BEZIER);
+                    centery /= (float)(POINTS_OF_BEZIER*POINTS_OF_BEZIER);
+
+                    for (int i=0; i <POINTS_OF_BEZIER; i++) {
+                        for (int j=0; j <POINTS_OF_BEZIER; j++) {
+                            im->screen->m_beziersurface->m_controlpoints[i][j].x = (im->screen->m_beziersurface->m_controlpoints[i][j].x-centerx)*0.98+centerx;
+                            im->screen->m_beziersurface->m_controlpoints[i][j].y = (im->screen->m_beziersurface->m_controlpoints[i][j].y-centery)*0.98+centery;
+                        }
+                    }
+                }
+                break;
+            case SDLK_j:
+                if (down) {
+                    float centerx=0.0f, centery=0.0f;
+
+                    for (int i=0; i <POINTS_OF_BEZIER; i++) {
+                        for (int j=0; j <POINTS_OF_BEZIER; j++) {
+                            centerx +=  im->screen->m_beziersurface->m_controlpoints[i][j].x;
+                            centery +=  im->screen->m_beziersurface->m_controlpoints[i][j].y;
+                        }
+                    }
+                    centerx /= (float)(POINTS_OF_BEZIER*POINTS_OF_BEZIER);
+                    centery /= (float)(POINTS_OF_BEZIER*POINTS_OF_BEZIER);
+
+                    for (int i=0; i <POINTS_OF_BEZIER; i++) {
+                        for (int j=0; j <POINTS_OF_BEZIER; j++) {
+                            im->screen->m_beziersurface->m_controlpoints[i][j].x = (im->screen->m_beziersurface->m_controlpoints[i][j].x-centerx)/0.98+centerx;
+                            im->screen->m_beziersurface->m_controlpoints[i][j].y = (im->screen->m_beziersurface->m_controlpoints[i][j].y-centery)/0.98+centery;
+                        }
+                    }
+                }
+                break;
+        }
+        if (down) {
+            BezierSurface_writeTo(im->screen->m_beziersurface, im->screen->m_warpinggrid);
+            WarpingGrid_createMesh(im->screen->m_warpinggrid);
+            sc_screen_render(im->screen, true);
+        }
+        return;
+    }
+
+
     if (down && !repeat) {
       if (keycode == im->last_keycode && mod == im->last_mod) {
         ++im->key_repeat;
@@ -382,143 +517,6 @@ sc_input_manager_process_key(struct sc_input_manager *im,
         im->last_mod = mod;
       }
     }
-
-    if (im->editbeziergrid) {
-      switch (keycode) {
-        case SDLK_DOWN:
-          if (down) {
-            im->screen->m_selected_pointy = MAX(0,im->screen->m_selected_pointy-1);
-          }
-          break;
-        case SDLK_UP:
-          if (down) {
-            im->screen->m_selected_pointy = MIN(POINTS_OF_BEZIER-1,im->screen->m_selected_pointy+1);
-          }
-          break;
-        case SDLK_LEFT:
-          if (down) {
-            im->screen->m_selected_pointx = MAX(0,im->screen->m_selected_pointx-1);
-          }
-          break;
-        case SDLK_RIGHT:
-          if (down) {
-            im->screen->m_selected_pointx = MIN(POINTS_OF_BEZIER-1,im->screen->m_selected_pointx+1);
-          }
-          break;
-
-        case SDLK_w:
-          if (down) {
-            im->screen->m_beziersurface->m_controlpoints[im->screen->m_selected_pointx][im->screen->m_selected_pointy].y += 0.01;
-          }
-          break;
-        case SDLK_s:
-          if (down) {
-            im->screen->m_beziersurface->m_controlpoints[im->screen->m_selected_pointx][im->screen->m_selected_pointy].y -= 0.01;
-          }
-          break;
-
-        case SDLK_a:
-          if (down) {
-            im->screen->m_beziersurface->m_controlpoints[im->screen->m_selected_pointx][im->screen->m_selected_pointy].x -= 0.01;
-          }
-          break;
-        case SDLK_d:
-          if (down) {
-            im->screen->m_beziersurface->m_controlpoints[im->screen->m_selected_pointx][im->screen->m_selected_pointy].x += 0.01;
-          }
-          break;
-
-        case SDLK_t:
-          if (down) {
-            for (int i=0; i <POINTS_OF_BEZIER; i++) {
-              for (int j=0; j <POINTS_OF_BEZIER; j++) {
-                im->screen->m_beziersurface->m_controlpoints[i][j].y += 0.01;
-              }
-            }
-          }
-          break;
-        case SDLK_g:
-          if (down) {
-            for (int i=0; i <POINTS_OF_BEZIER; i++) {
-              for (int j=0; j <POINTS_OF_BEZIER; j++) {
-                im->screen->m_beziersurface->m_controlpoints[i][j].y -= 0.01;
-              }
-            }
-          }
-          break;
-
-        case SDLK_f:
-          if (down) {
-            for (int i=0; i <POINTS_OF_BEZIER; i++) {
-              for (int j=0; j <POINTS_OF_BEZIER; j++) {
-                im->screen->m_beziersurface->m_controlpoints[i][j].x -= 0.01;
-              }
-            }
-          }
-          break;
-        case SDLK_h:
-          if (down) {
-            for (int i=0; i <POINTS_OF_BEZIER; i++) {
-              for (int j=0; j <POINTS_OF_BEZIER; j++) {
-                im->screen->m_beziersurface->m_controlpoints[i][j].x += 0.01;
-              }
-            }
-          }
-          break;
-        case SDLK_u:
-          if (down) {
-            float centerx=0.0f, centery=0.0f;
-
-            for (int i=0; i <POINTS_OF_BEZIER; i++) {
-              for (int j=0; j <POINTS_OF_BEZIER; j++) {
-                centerx +=  im->screen->m_beziersurface->m_controlpoints[i][j].x;
-                centery +=  im->screen->m_beziersurface->m_controlpoints[i][j].y;
-              }
-            }
-            centerx /= (float)(POINTS_OF_BEZIER*POINTS_OF_BEZIER);
-            centery /= (float)(POINTS_OF_BEZIER*POINTS_OF_BEZIER);
-
-            for (int i=0; i <POINTS_OF_BEZIER; i++) {
-              for (int j=0; j <POINTS_OF_BEZIER; j++) {
-                im->screen->m_beziersurface->m_controlpoints[i][j].x = (im->screen->m_beziersurface->m_controlpoints[i][j].x-centerx)*0.98+centerx;
-                im->screen->m_beziersurface->m_controlpoints[i][j].y = (im->screen->m_beziersurface->m_controlpoints[i][j].y-centery)*0.98+centery;
-              }
-            }
-          }
-          break;
-        case SDLK_j:
-          if (down) {
-            float centerx=0.0f, centery=0.0f;
-
-            for (int i=0; i <POINTS_OF_BEZIER; i++) {
-              for (int j=0; j <POINTS_OF_BEZIER; j++) {
-                centerx +=  im->screen->m_beziersurface->m_controlpoints[i][j].x;
-                centery +=  im->screen->m_beziersurface->m_controlpoints[i][j].y;
-              }
-            }
-            centerx /= (float)(POINTS_OF_BEZIER*POINTS_OF_BEZIER);
-            centery /= (float)(POINTS_OF_BEZIER*POINTS_OF_BEZIER);
-
-            for (int i=0; i <POINTS_OF_BEZIER; i++) {
-              for (int j=0; j <POINTS_OF_BEZIER; j++) {
-                im->screen->m_beziersurface->m_controlpoints[i][j].x = (im->screen->m_beziersurface->m_controlpoints[i][j].x-centerx)/0.98+centerx;
-                im->screen->m_beziersurface->m_controlpoints[i][j].y = (im->screen->m_beziersurface->m_controlpoints[i][j].y-centery)/0.98+centery;
-              }
-            }
-          }
-          break;
-      }
-      if (down) {
-        BezierSurface_writeTo(im->screen->m_beziersurface, im->screen->m_warpinggrid);
-        WarpingGrid_createMesh(im->screen->m_warpinggrid);
-        screen_render(im->screen, true);
-      }
-      return;
-
-    }
-
-
-
 
     // The shortcut modifier is pressed
     if (smod) {

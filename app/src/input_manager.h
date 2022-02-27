@@ -26,13 +26,14 @@ struct sc_input_manager {
     bool legacy_paste;
     bool clipboard_autosync;
 
+    bool editbeziergrid;
+
     struct {
         unsigned data[SC_MAX_SHORTCUT_MODS];
         unsigned count;
     } sdl_shortcut_mods;
 
     bool vfinger_down;
-    bool editbeziergrid;
 
     // Tracks the number of identical consecutive shortcut key down events.
     // Not to be confused with event->repeat, which counts the number of
@@ -50,6 +51,8 @@ struct sc_input_manager_params {
     struct sc_screen *screen;
     struct sc_key_processor *kp;
     struct sc_mouse_processor *mp;
+
+    bool editbeziergrid;
 
     bool forward_all_clicks;
     bool legacy_paste;
