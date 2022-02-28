@@ -422,9 +422,6 @@ scrcpy(struct scrcpy_options *options) {
     struct sc_key_processor *kp = NULL;
     struct sc_mouse_processor *mp = NULL;
 
-    // There is a controller if and only if control is enabled
-    assert(options->control == !!controller);
-
     if (options->display) {
         const char *window_title =
             options->window_title ? options->window_title : info->device_name;
@@ -605,9 +602,9 @@ aoa_hid_end:
         if (options->bezier_file) {
             if (fileexists(options->bezier_file)) {
                 LOGI("Loading bezier file %s", options->bezier_file);
-                BezierSurface_readFromFile(&s->screen.m_beziersurface, options->bezier_file);
-                BezierSurface_writeTo(&s->screen.m_beziersurface, &s->screen.m_warpinggrid);
-                WarpingGrid_createMesh(&s->screen.m_warpinggrid); // XXX: HERE
+                BezierSurface_readFromFile(s->screen.m_beziersurface, options->bezier_file);
+                BezierSurface_writeTo(s->screen.m_beziersurface, s->screen.m_warpinggrid);
+                WarpingGrid_createMesh(s->screen.m_warpinggrid);
             } else {
                 LOGI("will make new bezier file %s", options->bezier_file);
             }
@@ -624,6 +621,10 @@ aoa_hid_end:
         }
 
     }
+
+    // There is a controller if and only if control is enabled
+    assert(options->control == !!controller);
+
 
 #ifdef HAVE_V4L2
     if (options->v4l2_device) {

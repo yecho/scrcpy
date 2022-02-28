@@ -49,9 +49,9 @@ struct WarpingGrid {
 
 struct WarpingGrid* WarpingGrid_Create(int x, int y);
 void WarpingGrid_set(struct WarpingGrid*self, int i, int j, struct vec2 pos);
-struct vec2 WarpingGrid_get(struct WarpingGrid*self, int i, int j);
-void WarpingGrid_createMesh(struct WarpingGrid*self);
-void WarpingGrid_bindToGPU(struct WarpingGrid*self);
+struct vec2 WarpingGrid_get(struct WarpingGrid* self, int i, int j);
+void WarpingGrid_createMesh(struct WarpingGrid* self);
+void WarpingGrid_bindToGPU(struct WarpingGrid* self);
 void WarpingGrid_Destroy(struct WarpingGrid* self);
 
 double factorial(int n);
@@ -75,7 +75,7 @@ struct vec2 BezierSurface_eval(struct BezierSurface* self, double u, double v);
 struct BezierSurface* BezierSurface_Create();
 void BezierSurface_Destroy(struct BezierSurface* self);
 void BezierSurface_initBezierSurface(struct BezierSurface* self, struct vec2 minvalue, struct vec2 maxvalue);
-void BezierSurface_writeTo(struct BezierSurface* self, struct WarpingGrid*grid);
+void BezierSurface_writeTo(struct BezierSurface* self, struct WarpingGrid* grid);
 void BezierSurface_drawPoints(struct BezierSurface* self, int xselected, int yselected);
 void BezierSurface_writeToFile(struct BezierSurface* self, const char* filename);
 void BezierSurface_readFromFile(struct BezierSurface* self, const char* filename);
@@ -133,3 +133,4 @@ public:
 };
 */
 #endif
+
